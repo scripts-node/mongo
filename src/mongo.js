@@ -8,7 +8,7 @@
 /**
  * Inclui o módulo debug
  */
-var debug = require('debug')(process.env.SERVICE_NAME + ':src:db');
+var debug = require('debug')(process.env.SERVICE_NAME || "mongo" + ':src:db');
 
 /**
  * Classe para controle de cache com db
@@ -23,34 +23,40 @@ class Mongo {
             var c = this;
 
             /**
+             * Transpassa options
+             */
+            this.options = {};
+
+            /**
+             * Valida se existe parametro options
+             */
+            if(options)
+                this.options = options;
+
+            /**
              * Porta de conexão com Mongo
              */
-            this.port = process.env.MONGO_PORT || 27017;
+            this.port = (this.options.MONGO_PORT ? this.options.MONGO_PORT : (process.env.MONGO_PORT || 27017));
 
             /**
              * Ip de conexão com o mongo
              */
-            this.address = process.env.MONGO_ADDRESS || '127.0.0.1';
+            this.address = (this.options.MONGO_ADDRESS ? this.options.MONGO_ADDRESS : (process.env.MONGO_ADDRESS || '127.0.0.1'));
 
             /**
              * Usuário de conexão com o mongo
              */
-            this.username = process.env.MONGO_USERNAME || "";
+            this.username = (this.options.MONGO_USERNAME ? this.options.MONGO_USERNAME : (process.env.MONGO_USERNAME || ""));
 
             /**
              * Senha de conexão com o mongo
              */
-            this.password = process.env.MONGO_PASSWORD || "";
+            this.password = (this.options.MONGO_PASSWORD ? this.options.MONGO_PASSWORD : (process.env.MONGO_PASSWORD || ""));
 
             /**
              * Nome do db mongo
              */
-            this.dbName = process.env.MONGO_NAME || "";
-
-            /**
-             * LOG
-             */
-             debug("Estabelecendo conexão com o mongo através da porta %s e endereço %s",this.port,this.address);
+            this.dbName = (this.options.MONGO_NAME ? this.options.MONGO_NAME : (process.env.MONGO_NAME || "test"));
             
             /*
              * Valida se foi fornecido usuário para autentição
@@ -64,12 +70,26 @@ class Mongo {
             /**
              * Se a conexão com o banco precisar aguardar alguns segundos antes de ser iniciada
              */
-            if(options.sleep){
+            
+            if(Number.isInteger(this.options.sleep)){
+
+                /**
+                 * Log
+                 */
+                debug("Aguardando %s segundos antes de iniciar a conexão com mongoDb.",this.options.sleep);
+
+                /**
+                 * Seta o timer para iniciar a conexão
+                 */
                 setTimeout(()=>{
-                    startConnection();
-                },options.sleep);
+                    this.startConnection();
+                },(this.options.sleep * 1000));
             }else{
-                startConnection();
+
+                /**
+                 * Estabelece a conexão com o banco de dados.
+                 */
+                this.startConnection();
             }
     }
 
@@ -79,15 +99,47 @@ class Mongo {
          * Transfere para variável a propriedade this para ser usada dentro das funções
          */
         var c = this;
+        
+        /**
+         * LOG
+         */
+        debug("Estabelecendo conexão com o mongo através da porta %s e endereço %s",this.port,this.address);
 
         /**
          * Realiza a conexão com o banco
          */
-         mongoDb.MongoClient.connect(this.mongoString,{useUnifiedTopology: true}).then(function(conn){
+        mongoDb.MongoClient.connect(this.mongoString,{useUnifiedTopology: true}).then(function(conn){
+
+            /**
+             * Seta o nome do banco a ser utilizado
+             */
             c.db = conn.db(c.dbName);
+
+            /**
+             * Seta o uso de bucket
+             */
             c.bucket = new mongoDb.GridFSBucket(c.db);
+
+            /**
+             * Mensagem de debug
+             */
             debug('Conexão estabelecida com sucesso. Utilizando db name %s',c.dbName);
+
+            /**
+             * Cria um marcador para informar que a conexão foi estabelecida.
+             */
             c.status = "connected";
+        }).catch(error => {
+
+            /**
+             * LOG
+             */
+            debug("Erro ao estabelecer conexão com o mongoDb.",error);
+
+            /**
+             * Finaliza o processo
+             */
+            process.exit(2);
         });
     }
 
