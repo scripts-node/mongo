@@ -61,6 +61,9 @@ class Mongo {
                 this.mongoString = `mongodb://${this.username}:${this.password}@${this.address}:${this.port}/writeapp?authSource=admin`
             }
             
+            /**
+             * Se a conexão com o banco precisar aguardar alguns segundos antes de ser iniciada
+             */
             if(options.sleep){
                 setTimeout(()=>{
                     startConnection();
@@ -71,6 +74,12 @@ class Mongo {
     }
 
     startConnection(){
+
+        /**
+         * Transfere para variável a propriedade this para ser usada dentro das funções
+         */
+        var c = this;
+
         /**
          * Realiza a conexão com o banco
          */
