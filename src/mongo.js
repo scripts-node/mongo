@@ -15,7 +15,7 @@ var debug = require('debug')(process.env.SERVICE_NAME + ':src:db');
  */
 class Mongo {
 
-    constructor() {
+    constructor(options) {
 
             /**
              * Transfere para variável a propriedade this para ser usada dentro das funções
@@ -25,12 +25,12 @@ class Mongo {
             /**
              * Porta de conexão com Mongo
              */
-            this.port = process.env.MONTO_PORT || 27017;
+            this.port = process.env.MONGO_PORT || 27017;
 
             /**
              * Ip de conexão com o mongo
              */
-            this.address = process.env.MONTO_ADDRESS || '127.0.0.1';
+            this.address = process.env.MONGO_ADDRESS || '127.0.0.1';
 
             /**
              * Usuário de conexão com o mongo
@@ -61,15 +61,19 @@ class Mongo {
                 this.mongoString = `mongodb://${this.username}:${this.password}@${this.address}:${this.port}/writeapp?authSource=admin`
             }
             
-            /**
-             * Realiza a conexão com o banco
-             */
-            mongoDb.MongoClient.connect(this.mongoString,{useUnifiedTopology: true}).then(function(conn){
-                c.db = conn.db(c.dbName);
-                c.bucket = new mongoDb.GridFSBucket(c.db);
-                debug('Conexão estabelecida com sucesso.');
-                c.status = "connected";
-            });
+            startConnection()
+    }
+
+    startConnection(){
+        /**
+         * Realiza a conexão com o banco
+         */
+         mongoDb.MongoClient.connect(this.mongoString,{useUnifiedTopology: true}).then(function(conn){
+            c.db = conn.db(c.dbName);
+            c.bucket = new mongoDb.GridFSBucket(c.db);
+            debug('Conexão estabelecida com sucesso. Utilizando db name %s',c.dbName);
+            c.status = "connected";
+        });
     }
 
     /**
@@ -133,7 +137,7 @@ class Mongo {
                         /**
                          * Se o número máximo de tentativas de conexão for atingido
                          */
-                        if(this.attempt>=150){
+                        if(this.attempt>=30){
 
                             /**
                              * Finaliza o temporizador
@@ -141,11 +145,16 @@ class Mongo {
                             clearInterval(interval);
 
                             /**
+                             * Mensagem de retorno
+                             */
+                            var errorMessage = "Tempo esgotado para conexão com o banco de dados.";
+
+                            /**
                              * Retorna que apresentou falha
                              */
                             if(callback)
-                                return callback("Tempo esgotado para conexão com o banco de dados.");
-                                return reject("Tempo esgotado para conexão com o mongo de dados.");
+                                return callback(errorMessage);
+                                return reject(errorMessage);
                         }else{
 
                             /**
@@ -154,7 +163,7 @@ class Mongo {
                             this.attempt ++;
                         }
                     }
-                },100);
+                },1000);
             }
         }).catch((error) => {
             debug(error)
