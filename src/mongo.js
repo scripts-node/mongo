@@ -52,12 +52,18 @@ class Mongo {
              */
              debug("Estabelecendo conexão com o mongo através da porta %s e endereço %s",this.port,this.address);
             
+            /*
+             * Valida se foi fornecido usuário para autentição
+             */
             if(this.username === ""){
                 this.mongoString = `mongodb://${this.address}:${this.port}`
             }else{
                 this.mongoString = `mongodb://${this.username}:${this.password}@${this.address}:${this.port}/writeapp?authSource=admin`
             }
             
+            /**
+             * Realiza a conexão com o banco
+             */
             mongoDb.MongoClient.connect(this.mongoString,{useUnifiedTopology: true}).then(function(conn){
                 c.db = conn.db(c.dbName);
                 c.bucket = new mongoDb.GridFSBucket(c.db);
@@ -67,7 +73,7 @@ class Mongo {
     }
 
     /**
-     * Metodo que é executado quando a conexão com redis estiver pronta
+     * Metodo que é executado quando a conexão com mongo estiver pronta
      * @param {function} callback 
      * @returns 
      */
