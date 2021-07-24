@@ -3,7 +3,7 @@
 ## Incluíndo a classe
 
 ```node
-var mongo = require("./src/db");
+var mongo = require("./src/mongo");
 ```
 
 ## Chamada por callback
