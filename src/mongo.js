@@ -61,7 +61,13 @@ class Mongo {
                 this.mongoString = `mongodb://${this.username}:${this.password}@${this.address}:${this.port}/writeapp?authSource=admin`
             }
             
-            startConnection()
+            if(options.sleep){
+                setTimeout(()=>{
+                    startConnection();
+                },options.sleep);
+            }else{
+                startConnection();
+            }
     }
 
     startConnection(){
